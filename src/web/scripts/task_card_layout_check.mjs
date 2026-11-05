@@ -63,9 +63,9 @@ try {
         const rows=[...list.querySelectorAll('tbody tr:not(.task-empty-row)')],last=rows.at(-1);
         const buttons=last?[...last.querySelectorAll('.task-actions button')]:[];
         const reachable=e=>{const r=e.getBoundingClientRect();return visible(e)&&e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};
-        const header=list.querySelector('thead');
+        const headers=[...list.querySelectorAll('thead th')];
         const empty=list.querySelector('.task-empty-row');
-        return {toolbar:visible(toolbar),pager:visible(pager),container:visible(list),header:visible(header),count:rows.length,overflow:document.documentElement.scrollWidth>innerWidth+1,last:last?visible(last):!!empty&&visible(empty),buttons:(!last||buttons.length===3)&&buttons.every(reachable)}
+        return {toolbar:visible(toolbar),pager:visible(pager),container:visible(list),header:headers.length===7&&headers.every(visible),count:rows.length,overflow:document.documentElement.scrollWidth>innerWidth+1,last:last?visible(last):!!empty&&visible(empty),buttons:(!last||buttons.length===3)&&buttons.every(reachable)}
       })()`)
       assert.deepEqual(geometry, {toolbar:true,pager:true,container:true,header:true,count,overflow:false,last:true,buttons:true}, `${locale} ${width}x${height} count=${count}`)
       if(count) { await click('.task-table tbody tr:last-child .task-actions .ui-action-flow'); assert.equal(await evaluate('document.body.dataset.clicked'), 'true') }
