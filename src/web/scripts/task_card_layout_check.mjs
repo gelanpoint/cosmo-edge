@@ -57,14 +57,18 @@ try {
       await ready()
       const geometry = await evaluate(`(async () => {
         const visible = e => {const r=e.getBoundingClientRect(); return r.width>0&&r.height>0&&r.left>=-1&&r.top>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1}
-        const toolbar=document.querySelector('.task-toolbar'),pager=document.querySelector('.pagination-container'),grid=document.querySelector('.task-grid');
-        grid.scrollTop=grid.scrollHeight; await new Promise(requestAnimationFrame);
-        const cards=[...document.querySelectorAll('.task-card')],last=cards.at(-1);
-        const buttons=last?[...last.querySelectorAll('.card-actions button')]:[];
-        return {toolbar:visible(toolbar),pager:visible(pager),count:cards.length,overflow:document.documentElement.scrollWidth>innerWidth+1||grid.scrollWidth>grid.clientWidth+1,last:!last||visible(last),buttons:buttons.every(e=>{const r=e.getBoundingClientRect();return visible(e)&&e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))})}
+        const toolbar=document.querySelector('.task-toolbar'),pager=document.querySelector('.pagination-container'),list=document.querySelector('.task-list');
+        if(!list)throw Error('missing task table scroll container');
+        list.scrollTop=list.scrollHeight; await new Promise(requestAnimationFrame);
+        const rows=[...list.querySelectorAll('tbody tr:not(.task-empty-row)')],last=rows.at(-1);
+        const buttons=last?[...last.querySelectorAll('.task-actions button')]:[];
+        const reachable=e=>{const r=e.getBoundingClientRect();return visible(e)&&e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2))};
+        const header=list.querySelector('thead');
+        const empty=list.querySelector('.task-empty-row');
+        return {toolbar:visible(toolbar),pager:visible(pager),container:visible(list),header:visible(header),count:rows.length,overflow:document.documentElement.scrollWidth>innerWidth+1,last:last?visible(last):!!empty&&visible(empty),buttons:(!last||buttons.length===3)&&buttons.every(reachable)}
       })()`)
-      assert.deepEqual(geometry, {toolbar:true,pager:true,count,overflow:false,last:true,buttons:true}, `${locale} ${width}x${height} count=${count}`)
-      if(count) { await click('.task-card:last-child .card-actions button'); assert.equal(await evaluate('document.body.dataset.clicked'), 'true') }
+      assert.deepEqual(geometry, {toolbar:true,pager:true,container:true,header:true,count,overflow:false,last:true,buttons:true}, `${locale} ${width}x${height} count=${count}`)
+      if(count) { await click('.task-table tbody tr:last-child .task-actions .ui-action-flow'); assert.equal(await evaluate('document.body.dataset.clicked'), 'true') }
     }
   }
   await call('Page.navigate', {url:`http://127.0.0.1:${server.address().port}/?mode=parameter`})
@@ -76,7 +80,7 @@ try {
     assert.equal(saved.channelEditable, editable)
     assert.equal(saved.senior, editable ? 0 : 2)
   }
-  console.log('Task card browser geometry and checkbox roundtrip checks passed (12 layouts)')
+  console.log('Task table browser geometry and checkbox roundtrip checks passed (12 layouts)')
 } finally {
   closeBrowser?.().catch(() => {})
   await new Promise((resolve) => {
